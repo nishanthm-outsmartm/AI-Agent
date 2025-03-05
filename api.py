@@ -19,7 +19,7 @@ def get_url_content(url):
         main_content = soup.find('main') or soup.find('article') or soup.body
         if main_content:
             text = ' '.join(main_content.stripped_strings)
-            return text[:3000]  
+            return text[:3000]
         return "Could not extract main content from the webpage"
     except Exception as e:
         return f"Error fetching URL content: {str(e)}"
@@ -34,8 +34,8 @@ def generate_content():
     content_style = data['content_style']
     num_outputs = data['num_outputs']
 
-    groq_url = "https://api.groq.com/openai/v1/chat/completions"
-    groq_api_key = os.getenv('GROQ_API_TOKEN')
+    grok_url = "https://api.grok.com/openai/v1/chat/completions"
+    grok_api_key = os.getenv('GROK_API_TOKEN')
 
     examples = []
     if age_option == "Kid":
@@ -71,7 +71,7 @@ def generate_content():
     )
 
     new_prompt_template = FewShotPromptTemplate(
-        example_selector=example_selector, 
+        example_selector=example_selector,
         example_prompt=example_prompt,
         prefix=prefix,
         suffix=suffix,
@@ -82,17 +82,17 @@ def generate_content():
     prompt_data = new_prompt_template.format(template_userInput=query)
 
     payload = {
-        "model": "mixtral-8x7b-32768",
+        "model": "grok-2-latest",
         "messages": [{"role": "user", "content": prompt_data}],
         "n": num_outputs
     }
 
     headers = {
-        "Authorization": f"Bearer {groq_api_key}",
+        "Authorization": f"Bearer {grok_api_key}",
         "Content-Type": "application/json"
     }
 
-    response = requests.post(groq_url, json=payload, headers=headers)
+    response = requests.post(grok_url, json=payload, headers=headers)
     if response.status_code == 200:
         result = response.json()
         return jsonify([choice['message']['content'] for choice in result['choices']])
