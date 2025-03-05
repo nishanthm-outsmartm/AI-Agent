@@ -5,14 +5,10 @@ from langchain.prompts.example_selector import LengthBasedExampleSelector
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 from flask import Flask, request, jsonify
-
-# Load environment variables
 load_dotenv()
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# Function to fetch URL content
 def get_url_content(url):
     try:
         response = requests.get(url, timeout=10)
@@ -26,7 +22,6 @@ def get_url_content(url):
     except Exception as e:
         return f"Error fetching URL content: {str(e)}"
 
-# Route for generating content based on user input
 @app.route('/generate', methods=['POST'])
 def generate_content():
     data = request.json
@@ -42,7 +37,6 @@ def generate_content():
 
     examples = []
 
-    # Define examples based on the selected age option
     if age_option == "Kid":
         examples = [
             {"query": "What is a mobile?", "answer": "A mobile is a magical device that fits in your pocket!"},
@@ -59,22 +53,18 @@ def generate_content():
             {"query": "Why is the sky blue?", "answer": "Atmospheric scattering makes the sky appear blue."}
         ]
     
-    # Define prompt template
     example_template = """Question: {query}\nResponse: {answer}"""
     example_prompt = PromptTemplate(input_variables=["query", "answer"], template=example_template)
 
-    # Prefix and suffix for the generated prompt
     prefix = f"""You are a {age_option} creating {content_style} content for {social_media}. Task: {tasktype_option}. Examples:"""
     suffix = "\nQuestion: {template_userInput}\nResponse: "
 
-    # Example selector based on length
     example_selector = LengthBasedExampleSelector(
         examples=examples, 
         example_prompt=example_prompt, 
         max_length=200
     )
 
-    # Define the final prompt template
     new_prompt_template = FewShotPromptTemplate(
         example_selector=example_selector,
         example_prompt=example_prompt,
@@ -84,10 +74,8 @@ def generate_content():
         example_separator="\n"
     )
 
-    # Format the prompt
     prompt_data = new_prompt_template.format(template_userInput=query)
 
-    # Payload for the API request
     payload = {
         "model": "mixtral-8x7b-32768",
         "messages": [{"role": "user", "content": prompt_data}],
@@ -99,7 +87,6 @@ def generate_content():
         "Content-Type": "application/json"
     }
 
-    # Send the request to the Groq API
     response = requests.post(groq_url, json=payload, headers=headers)
 
     if response.status_code == 200:
@@ -107,6 +94,5 @@ def generate_content():
         return jsonify([choice['message']['content'] for choice in result['choices']])
     return jsonify({"error": f"API Error: {response.status_code} - {response.text}"}), response.status_code
 
-# Run the Flask app
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
